@@ -12,10 +12,31 @@ class Task:
     priority: int
     frequency: Optional[str] = None
     completed_status: bool = False
+    due_date: Optional[date] = None
 
     def mark_complete(self) -> None:
         """Mark this task as completed."""
         self.completed_status = True
+        # Handle recurring tasks
+        if self.frequency == "daily":
+            new_due_date = date.today() + timedelta(days=1)
+            new_task = Task(
+                task_name=self.task_name,
+                duration=self.duration,
+                priority=self.priority,
+                frequency=self.frequency,
+                due_date=new_due_date,
+            )
+            # Note: Need to add to pet's tasks, but Task doesn't know its pet. Handle in Pet or Owner.
+        elif self.frequency == "weekly":
+            new_due_date = date.today() + timedelta(days=7)
+            new_task = Task(
+                task_name=self.task_name,
+                duration=self.duration,
+                priority=self.priority,
+                frequency=self.frequency,
+                due_date=new_due_date,
+            )
 
     def update_priority(self, priority: int) -> None:
         """Update the priority level of the task."""
@@ -86,6 +107,34 @@ class Pet:
         """Return a list of tasks for this pet."""
         return list(self.tasks)
 
+    def mark_task_complete(self, task_name: str) -> bool:
+        """Mark a task as complete by name and handle recurring if applicable."""
+        for task in self.tasks:
+            if task.task_name == task_name and not task.completed_status:
+                task.mark_complete()
+                if task.frequency == "daily":
+                    new_due_date = date.today() + timedelta(days=1)
+                    new_task = Task(
+                        task_name=task.task_name,
+                        duration=task.duration,
+                        priority=task.priority,
+                        frequency=task.frequency,
+                        due_date=new_due_date,
+                    )
+                    self.add_task(new_task)
+                elif task.frequency == "weekly":
+                    new_due_date = date.today() + timedelta(days=7)
+                    new_task = Task(
+                        task_name=task.task_name,
+                        duration=task.duration,
+                        priority=task.priority,
+                        frequency=task.frequency,
+                        due_date=new_due_date,
+                    )
+                    self.add_task(new_task)
+                return True
+        return False
+
 
 class User:
     """Represents an owner of one or more pets."""
@@ -148,6 +197,15 @@ class User:
                 return pet.get_tasks()
         return []
 
+    def filter_tasks(self, completed: Optional[bool] = None, pet_name: Optional[str] = None) -> List[Task]:
+        """Filter tasks by completion status and pet name."""
+        tasks = self.get_all_tasks()
+        if pet_name:
+            tasks = self.get_tasks_by_pet(pet_name)
+        if completed is not None:
+            tasks = [t for t in tasks if t.completed_status == completed]
+        return tasks
+
 
 class DailyPlan:
     def __init__(
@@ -165,17 +223,22 @@ class DailyPlan:
         """Add a task to the daily plan."""
         self.tasks.append(task)
 
-    def generate_plan(self, start_time: str = "08:00") -> None:
-        """Generate a schedule for the day based on tasks and constraints."""
+    def generate_plan(self, start_time: str = "08:00") -> Tuple[None, Optional[str]]:
+        """Generate a schedule for the day based on tasks and constraints. Returns (None, warning_message) if conflicts."""
         # Simple greedy schedule: sort by priority (higher first), then assign time slots sequentially.
         sorted_tasks = sorted(self.tasks, key=lambda t: t.priority, reverse=True)
         current = datetime.strptime(start_time, "%H:%M")
         self.scheduled_times = {}
+        times_used = set()
 
         for task in sorted_tasks:
             slot = current.strftime("%H:%M")
+            if slot in times_used:
+                return None, f"Conflict detected: Task '{task.task_name}' scheduled at {slot}, but time already occupied."
             self.scheduled_times[task.task_name] = slot
+            times_used.add(slot)
             current += timedelta(minutes=task.duration)
+        return None, None
 
     def get_daily_schedule(self) -> Dict[str, object]:
         """Return the current daily schedule."""
@@ -194,11 +257,18 @@ class Scheduler:
     """Encapsulates scheduling logic using owner and pet tasks."""
 
     @staticmethod
-    def generate_daily_plan(owner: User, start_time: str = "08:00") -> DailyPlan:
-        """Generate a daily plan based on the owner's pets and their tasks."""
+    def sort_by_time(tasks: List[Task], scheduled_times: Dict[str, str]) -> List[Task]:
+        """Sort tasks by their scheduled time in HH:MM format."""
+        def time_key(task: Task) -> str:
+            return scheduled_times.get(task.task_name, "23:59")
+        return sorted(tasks, key=time_key)
+
+    @staticmethod
+    def generate_daily_plan(owner: User, start_time: str = "08:00") -> Tuple[DailyPlan, Optional[str]]:
+        """Generate a daily plan based on the owner's pets and their tasks. Returns (plan, warning_message)."""
         plan = DailyPlan(tasks=owner.get_all_tasks())
-        plan.generate_plan(start_time=start_time)
-        return plan
+        _, warning = plan.generate_plan(start_time=start_time)
+        return plan, warning
 
 
 # Alias for clarity in domain modeling.

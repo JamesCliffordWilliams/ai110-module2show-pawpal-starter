@@ -4,8 +4,34 @@
 
 **a. Initial design**
 
+Core actions:
+
+    Users of PawPal+ should be able to:
+    1. View a personalized calendar that details when pet care tasks should be completed, this calendar should take into account the users entered information about their current time obligations to prevent scheduling conflicts 
+    2. Mark tasks as done 
+    3. Add pets and their information like name, species, dob, breed.
+
+    What are the main objects needed for this system?
+    We will need:
+    1. A pet object
+        This object will store pet_name, species, dob, breed, medications.
+        It will include get_pet_info(), update_pet_info(), get_age().
+
+    2. A schedule or daily plan object
+        This object will store tasks, scheduled_times, and daily_constraints.
+        It will include add_task(), generate_plan(), get_daily_schedule(), update_schedule().
+
+    3. A user object
+        This object will store unavailable_times, preferences, and priorities.
+        It will include get_user_info(), update_preferences(), add_unavailable_time().
+
+    4. A task object
+        This object will store task_name, duration, priority, completed_status.
+        It will include mark_complete(), update_priority(), update_duration(), get_task_info().
 - Briefly describe your initial UML design.
 - What classes did you include, and what responsibilities did you assign to each?
+
+My initial UML design included four classes: Pet, User, Task, and DailyPlan. The Pet class stores information about the pet like its name, species, breed, date of birth, and medications. The User class represents the owner and keeps track of things like unavailable times and preferences that affect scheduling. The Task class represents individual care tasks such as feeding or walking and stores details like duration, priority, and whether the task is completed. The DailyPlan class is responsible for organizing tasks and generating a schedule for the day based on the user’s constraints and task priorities.
 
 **b. Design changes**
 

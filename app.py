@@ -81,9 +81,20 @@ if st.button("Generate schedule"):
     else:
         plan, warning = Scheduler.generate_daily_plan(owner, start_time="08:00")
         if warning:
-            st.warning(warning)
+            st.warning(f"⚠️ Scheduling Conflict: {warning}")
         schedule = plan.get_daily_schedule()
+        scheduled_times = schedule.get("scheduled_times", {})
+
+        # Sort tasks by time for display
+        sorted_tasks = Scheduler.sort_by_time(plan.tasks, scheduled_times)
 
         st.markdown("### Today's Schedule")
-        for task_name, time_slot in schedule.get("scheduled_times", {}).items():
-            st.write(f"{time_slot} — {task_name}")
+        if sorted_tasks:
+            # Display as a clean table
+            table_data = [
+                {"Time": scheduled_times.get(t.task_name, "N/A"), "Task": t.task_name, "Duration": f"{t.duration}m", "Priority": t.priority}
+                for t in sorted_tasks
+            ]
+            st.table(table_data)
+        else:
+            st.info("No tasks to schedule.")

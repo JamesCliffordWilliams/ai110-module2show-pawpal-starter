@@ -50,3 +50,11 @@ The scheduler now has some handy upgrades to make planning easier:
 - **Filtering tasks**: You can pull out tasks by whether they're done or not, or filter by a specific pet's tasks.
 - **Recurring tasks**: Mark a daily or weekly task as complete, and it automatically adds a new one for the next day/week.
 - **Basic conflict detection**: If two tasks end up at the same time slot, it warns you instead of crashing.
+
+## Testing PawPal+
+
+Run the tests with `python3 -m pytest` to check that everything's working.
+
+The tests cover sorting tasks by time to make sure they come out in the right order, handling recurring tasks like daily walks, and spotting conflicts when tasks overlap.
+
+Confidence Level: ⭐⭐⭐⭐ (Pretty solid, but could use more edge case tests.)
